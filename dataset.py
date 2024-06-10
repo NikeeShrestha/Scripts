@@ -1,13 +1,7 @@
-import torchvision
 import torch
-import torchvision.transforms as transforms
 import os
-import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
-import glob
 from sklearn import preprocessing
-import sys
 
 class feature_dataset(torch.utils.data.Dataset):
      def __init__(self,data_path, preprocess = None):
@@ -63,8 +57,9 @@ class Datasetloader:
     def get_dataloaders(self):
         return self.train_dataloader, self.val_dataloader, self.test_dataloader
     
-Loader = Datasetloader(data_path='/home/schnablelab/Documents/GenePrediction/MaizePanGeneCount_SorghumCount.csv')
+# Loader = Datasetloader(data_path='/home/schnablelab/Documents/GenePrediction/MaizePanGeneCount_SorghumCount.csv')
 
-tr, vl, test= Loader.get_dataloaders()
-print(Loader)
-print(tr, vl, test)
+# tr, vl, test= Loader.get_dataloaders()
+# from architecture import Autoencoder
+# for batch, data in enumerate(tr):
+#     print(batch, data)

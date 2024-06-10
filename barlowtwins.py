@@ -11,7 +11,7 @@ from sklearn.utils import shuffle
 import sklearn
 
 
-class BarlowtwinsTrainer:
+class Barlowtwinsloader:
 
     def __init__(self, **kwargs):
         ## Reuired files for below functions
