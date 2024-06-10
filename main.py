@@ -105,7 +105,7 @@ for epoch in range(epochs):
 
         if average_v_loss < best_vloss:
             best_vloss = average_v_loss
-            torch.save(model.state_dict(), 'best_autoencoder_model.path')
+            torch.save(model.state_dict(), '../Models/best_autoencoder_model.path')
             epochs_no_improve = 0
         else:
             epochs_no_improve +=1
@@ -114,7 +114,7 @@ for epoch in range(epochs):
             print(f'Early Stopping at epoch: {epoch}')
             break
 
-torch.save(model.state_dict(), 'final_autoencoder_model.pth')
+torch.save(model.state_dict(), '../Models/final_autoencoder_model.path')
 (pd.DataFrame.from_dict(total_training_loss)).to_csv('Training_loss.csv')
 (pd.DataFrame.from_dict(total_val_loss)).to_csv('Validation_loss.csv')
 
