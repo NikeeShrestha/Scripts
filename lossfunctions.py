@@ -36,5 +36,19 @@ class MSElossFunc(torch.nn.Module):
     def forward(self, predicted, target):
         return torch.mean((predicted-target) ** 2)
 
+##data augment functions
+class dataaugment:
+    def __init__(self, data):
+        self.data=data
+        
+    def add_noise(self, noise_level=0.01):
+        noise = torch.rand_like(self.data) * noise_level
+        return self.data+noise
     
-
+    def random_feature_dropping(self, drop_prob=0.1):
+        mask = torch.rand_like(self.data) > drop_prob
+        return self.data * mask
+    
+    def shuffle_data(self):
+        indices = torch.randperm(self.data.size(0))
+        return self.data[indices]
