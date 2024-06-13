@@ -5,6 +5,11 @@ class BarlowTwinsLoss(torch.nn.Module):
     def __init__(self, lambd=5e-3):
         super(BarlowTwinsLoss, self).__init__()
         self.lambd = lambd
+    
+    def off_diagonal(self, x):
+        n, m = x.shape
+        assert n == m
+        return x.flatten()[:-1].view(n - 1, n + 1)[:, 1:].flatten()
 
     def forward(self, z1, z2):
         N, D = z1.size()
@@ -22,10 +27,7 @@ class BarlowTwinsLoss(torch.nn.Module):
         loss = on_diag + self.lambd * off_diag
         return loss
 
-    def off_diagonal(self, x):
-        n, m = x.shape
-        assert n == m
-        return x.flatten()[:-1].view(n - 1, n + 1)[:, 1:].flatten()
+   
     
 
 ##MSE loss for decoder

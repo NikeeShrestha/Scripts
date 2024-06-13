@@ -5,6 +5,7 @@ from dataset import Datasetloader
 import numpy as np
 from tqdm import tqdm
 import pandas as pd
+from scalingfactor import scalingfactor
 
 
 
@@ -24,21 +25,24 @@ model = Autoencoder(input_dimension=10761, latent_dimension=512).to(device)
 # print('model initialized')
 
 ##learning rate and optimizer
-optimizer=torch.optim.Adam(model.parameters(), lr=0.0001)
+optimizer=torch.optim.Adam(model.parameters(), lr=0.001)
 # print('optimizer done')
 
 barlow_loss = BarlowTwinsLoss().to(device)
-mse_loss = MSElossFunc().to(device)
+mse_loss = torch.nn.L1Loss().to(device)
 # print('losses initialized')
 
 epochs = 1000
 
-patience = 10  # Number of epochs to wait for improvement before stopping
+patience = 100  # Number of epochs to wait for improvement before stopping
 epochs_no_improve = 0  # Counter for epochs with no improvement
 
 total_training_loss=[]
 total_val_loss=[]
 best_vloss = 1_000_000.
+running_avg_barlow_loss = None
+running_avg_barlow_loss_ = None
+initialscalingfactor = scalingfactor(trainerLoader=trainerLoader)
 
 for epoch in range(epochs):
     # print(epoch)
@@ -47,7 +51,11 @@ for epoch in range(epochs):
     train_mse_loss_epoch=[]
 
     for batch_index, data in tqdm(enumerate(trainerLoader, 0), unit='batch', total=len(trainerLoader)):
+        # if batch_index==2:
+        #     break
         data = data.to(device)
+
+        optimizer.zero_grad()  # Zero the gradients
         data_augmenter = dataaugment(data)
         data1 = data_augmenter.add_noise(noise_level=0.001)
         data2 = data_augmenter.add_noise(noise_level=0.002)
@@ -57,6 +65,25 @@ for epoch in range(epochs):
         z2, _ = model(data2)
 
         barlowLoss = barlow_loss(z1,z2)
+
+        if epoch == 0 and batch_index == 0:
+            scaled_barlowLoss = initialscalingfactor * barlowLoss
+            # print(scaled_barlowLoss)
+            running_avg_barlow_loss_ = barlowLoss.item()
+            running_avg_barlow_loss = barlowLoss.item()
+            # print(running_avg_barlow_loss)
+        else:
+            # running_avg_barlow_loss = barlowLoss.item()
+            scaled_barlowLoss = barlowLoss / running_avg_barlow_loss
+            # print(scaled_barlowLoss)
+
+            ##giving priority to both past and current barlow loss.
+
+            running_avg_barlow_loss = 0.9 * running_avg_barlow_loss_ + 0.1 * barlowLoss.item()
+            # print(running_avg_barlow_loss)
+            running_avg_barlow_loss_ = barlowLoss.item()
+
+        
         # barlowLoss_scaled = (barlowLoss - barlowLoss.min())/(barlowLoss.max() - barlowLoss.min()) 
         
         # print('barlowtwinloss')
@@ -64,16 +91,16 @@ for epoch in range(epochs):
         mseloss = mse_loss(data, reconstructed1)
         # mseloss_scaled = (mseloss - mseloss.min())/(mseloss.max() - mseloss.min()) 
 
-        total_loss_value = 0.1 * barlowLoss + 1 * mseloss
+        total_loss_value = 0.5*scaled_barlowLoss + mseloss ##next I will try 0.5*scaledbarlowloss +mseloss
 
-        optimizer.zero_grad()  # Zero the gradients
+        # print(f"Total Loss Requires Grad: {total_loss_value.requires_grad}")
         total_loss_value.backward()  # Backpropagate the total loss
+        # print('done')
         optimizer.step()
 
         train_loss_epoch.append(total_loss_value.item())
         train_barlowloss_epoch.append(barlowLoss.item())
         train_mse_loss_epoch.append(mseloss.item())
-
 
     average_total_loss = np.mean(train_loss_epoch)
     average_barlow_loss = np.mean(train_barlowloss_epoch)
@@ -103,7 +130,12 @@ for epoch in range(epochs):
             valmseloss = mse_loss(val_data, valreconstructed1)
             # valmseloss_scaled = (valmseloss - valmseloss.min())/(valmseloss.max() - valmseloss.min()) 
 
-            total_valloss_value = 0.1 * valbarlowLoss + 1 * valmseloss
+            if epoch == 0 and batch_index == 0:
+                scaled_valbarlowLoss = initialscalingfactor * valbarlowLoss
+            else:
+                scaled_valbarlowLoss = valbarlowLoss / running_avg_barlow_loss
+
+            total_valloss_value = 0.5*scaled_valbarlowLoss + valmseloss
 
             val_loss_epoch.append(total_valloss_value.item())
             val_barlowloss_epoch.append(valbarlowLoss.item())
@@ -118,7 +150,7 @@ for epoch in range(epochs):
 
         if average_v_loss < best_vloss:
             best_vloss = average_v_loss
-            torch.save(model.state_dict(), '../Models/best_autoencoder_model.path')
+            torch.save(model.state_dict(), '../Models/best_autoencoder_model.pth')
             epochs_no_improve = 0
         else:
             epochs_no_improve +=1
@@ -135,8 +167,6 @@ for epoch in range(epochs):
 torch.save(model.state_dict(), '../Models/final_autoencoder_model.path')
 (pd.DataFrame.from_dict(total_training_loss)).to_csv('Training_loss.csv')
 (pd.DataFrame.from_dict(total_val_loss)).to_csv('Validation_loss.csv')
-
-
 
 
 
