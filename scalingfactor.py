@@ -25,7 +25,7 @@ def scalingfactor(trainerLoader):
     with torch.no_grad():
         start = time.time()
         print('Time starts for Scaling Factor Calculation')
-        for batch_index, data in enumerate(trainerLoader):
+        for batch_index, (data,geneID) in enumerate(trainerLoader):
             if batch_index > 10:  # Use first 10 batches for scaling factor calculation
                 break
             z1, reconstructed1 = model(data)

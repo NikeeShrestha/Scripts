@@ -18,14 +18,14 @@ class feature_dataset(torch.utils.data.Dataset):
 
 # Convert NumPy array to PyTorch tensor and ensure it's a float tensor
           self.processedfeature_tensordata = torch.tensor(self.processedfeature_data, dtype=torch.float)
+          self.geneIDs=self.rawfeature_data.index.tolist()
 
      def __len__(self):
         return len(self.processedfeature_data)
         # return len(self.all_label)
 
      def __getitem__(self, idx):
-         return self.processedfeature_tensordata[idx]
-
+         return self.processedfeature_tensordata[idx], (self.geneIDs)[idx]
 # Datasetloader for training, testing and validate dataset 
 
 class Datasetloader:
@@ -52,14 +52,17 @@ class Datasetloader:
         train_size = int(self.train_split * ds_size)
         val_size = int(self.val_split * ds_size)
         test_size = ds_size - train_size - val_size
-        return torch.utils.data.random_split(self.ds, [train_size, val_size,test_size])
+        return torch.utils.data.random_split(self.ds, [train_size, val_size,test_size],generator=torch.Generator().manual_seed(self.random_state))
     
     def get_dataloaders(self):
         return self.train_dataloader, self.val_dataloader, self.test_dataloader
     
-# Loader = Datasetloader(data_path='/home/schnablelab/Documents/GenePrediction/MaizePanGeneCount_SorghumCount.csv')
+# Loader = Datasetloader(data_path='/home/schnablelab/Documents/GenePrediction/MaizePanGeneCount_SorghumCount.csv', batch_size=1)
 
 # tr, vl, test= Loader.get_dataloaders()
-# from architecture import Autoencoder
-# for batch, data in enumerate(tr):
-#     print(batch, data)
+# # from architecture import Autoencoder
+# for batch, (data, label) in enumerate(tr):
+#     print(data,label)
+
+    # for i in range(len(label)):
+    #     print(data[i], label[i])
